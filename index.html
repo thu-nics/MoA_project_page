@@ -1,394 +1,575 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="description"
-        content="MoA: Mixture of Sparse Attention for Automatic Large Language Model Compression">
-  <meta name="keywords" content="Language Model, Compression, Sparse Attention">
+  <meta name="description" content="MoA: Mixture of Attention Spans - optimizing LLM inference efficiency with heterogeneous sliding-window lengths.">
+  <meta name="keywords" content="MoA, Mixture of Attention Spans, LLM, sliding-window attention, sparse attention, long context, KV cache">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MoA: Mixture of Sparse Attention for Automatic Large Language Model Compression</title>
+  <title>thu-nics/MoA</title>
 
-  <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-
+    function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
-
     gtag('config', 'G-PYVRSFMDRL');
   </script>
 
-  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
-        rel="stylesheet">
-
-  <link rel="stylesheet" href="./static/css/bulma.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
-  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Pro+Text:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="./static/css/index.css">
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script defer src="./static/js/fontawesome.all.min.js"></script>
-  <script src="./static/js/bulma-carousel.min.js"></script>
-  <script src="./static/js/bulma-slider.min.js"></script>
-  <script src="./static/js/index.js"></script>
+  <link rel="icon" href="./static/images/logo.png">
+  <script src="./static/js/index.js" defer></script>
 </head>
 <body>
 
+<nav class="nav-global" id="navGlobal">
+  <div class="nav-global-content">
+    <a href="https://github.com/thu-nics" aria-label="NICS-EFC GitHub">
+      <img src="https://fuvty.github.io/C2C_Project_Page/static/images/page_logo.png" alt="NICS-EFC" class="nav-global-logo">
+    </a>
+    <div class="nav-global-links">
+      <a href="https://fuvty.github.io/R2R_Project_Page/">R2R</a>
+      <a href="https://fuvty.github.io/TaH_Webpage/">TaH</a>
+      <a href="https://fuvty.github.io/C2C_Project_Page/">C2C</a>
+      <a href="https://thu-nics.github.io/FrameFusion_Project_Page/">FrameFusion</a>
+      <a href="https://thu-nics.github.io/MoA_project_page/" class="active">MoA</a>
+    </div>
+  </div>
+</nav>
+
+<nav class="nav" id="navLocal">
+  <div class="nav-content">
+    <div class="nav-logo-wrapper" id="navLogoWrapper">
+      <a href="https://thu-nics.github.io/MoA_project_page/" class="nav-logo">
+        MoA
+        <i class="fas fa-chevron-down nav-logo-chevron"></i>
+      </a>
+      <div class="nav-dropdown">
+        <div class="nav-dropdown-title">Explore Projects</div>
+        <div class="nav-dropdown-grid">
+          <a href="https://fuvty.github.io/R2R_Project_Page/" class="nav-dropdown-item">
+            <div class="nav-dropdown-icon">
+              <img src="https://raw.githubusercontent.com/thu-nics/R2R/main/resource/logo.png" alt="R2R">
+            </div>
+            <div class="nav-dropdown-text">
+              <div class="nav-dropdown-name">R2R</div>
+              <div class="nav-dropdown-desc">Token-level routing for reasoning LLMs</div>
+            </div>
+          </a>
+          <a href="https://fuvty.github.io/TaH_Webpage/" class="nav-dropdown-item">
+            <div class="nav-dropdown-icon">
+              <img src="https://raw.githubusercontent.com/thu-nics/TaH/main/resource/logo.png" alt="TaH">
+            </div>
+            <div class="nav-dropdown-text">
+              <div class="nav-dropdown-name">TaH</div>
+              <div class="nav-dropdown-desc">Selective latent thinking for reasoning LLMs</div>
+            </div>
+          </a>
+          <a href="https://fuvty.github.io/C2C_Project_Page/" class="nav-dropdown-item">
+            <div class="nav-dropdown-icon">
+              <img src="https://raw.githubusercontent.com/thu-nics/C2C/main/resource/logo.png" alt="C2C">
+            </div>
+            <div class="nav-dropdown-text">
+              <div class="nav-dropdown-name">C2C</div>
+              <div class="nav-dropdown-desc">Communicate through KV-Cache between LLMs</div>
+            </div>
+          </a>
+          <a href="https://thu-nics.github.io/FrameFusion_Project_Page/" class="nav-dropdown-item">
+            <div class="nav-dropdown-icon">
+              <img src="https://thu-nics.github.io/FrameFusion_Project_Page/static/images/transparant_logo.png" alt="FrameFusion">
+            </div>
+            <div class="nav-dropdown-text">
+              <div class="nav-dropdown-name">FrameFusion</div>
+              <div class="nav-dropdown-desc">Video token reduction for LVLMs</div>
+            </div>
+          </a>
+          <a href="https://thu-nics.github.io/MoA_project_page/" class="nav-dropdown-item active">
+            <div class="nav-dropdown-icon">
+              <img src="./static/images/logo.png" alt="MoA">
+            </div>
+            <div class="nav-dropdown-text">
+              <div class="nav-dropdown-name">MoA</div>
+              <div class="nav-dropdown-desc">Heterogeneous attention spans for LLMs</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-links" id="navLinks">
+      <a href="#overview">Idea</a>
+      <a href="#observations">Observations</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#bibtex">BibTeX</a>
+      <a href="https://github.com/thu-nics/MoA" class="nav-cta">
+        <i class="fab fa-github"></i> GitHub
+      </a>
+    </div>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+</nav>
 
 <section class="hero">
-  <div class="hero-body">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered">
-        <div class="column has-text-centered">
-          <h1 class="title is-1 publication-title"> <img src="./static/images/logo.png" style="width: 3em; vertical-align: bottom;"  />MoA: Mixture of Sparse Attention for Automatic Large Language Model Compression</h1>
-          <div class="is-size-5 publication-authors">
-            <span class="author-block">
-              <a href="https://fuvty.simple.ink/">Tianyu Fu</a><sup>1,2,*</sup>,</span>
-            <span class="author-block">
-              <a href="https://github.com/jason-huang03">Haofeng Huang</a><sup>1,2,*</sup>,</span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/XuefeiNing">Xuefei Ning</a><sup>1,*</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://zhang677.github.io/">Genghan Zhang</a><sup>3</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people.html">Boju Chen</a><sup>1</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/TianqiWu">Tianqi Wu</a><sup>1,2</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/HongyiWang">Hongyi Wang</a><sup>1,2</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/ZixiaoHuang">Zixiao Huang</a><sup>1,2</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/ShiyaoLi">Shiyao Li</a><sup>1,2</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://scholar.google.com/citations?user=SvE3bdUAAAAJ&hl=en">Shengen Yan</a><sup>1,2</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://dai.sjtu.edu.cn/pepledetail.html?id=218">Guohao Dai</a><sup>2,4</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://www.ee.tsinghua.edu.cn/en/info/1067/1292.htm">Huazhong Yang</a><sup>1</sup>
-            </span>
-            <span class="author-block">
-              <a href="https://nicsefc.ee.tsinghua.edu.cn/people/YuWang">Yu Wang</a><sup>1</sup>
-            </span>
-          </div>
+  <div class="hero-content">
+    <h1 class="hero-title"><span>Mixture of Attention</span></h1>
+    <p class="hero-subtitle">
+      Optimizing LLM Inference Efficiency with Heterogeneous Sliding-Window Lengths.
+    </p>
 
-          <div class="is-size-5 publication-authors">
-            <span class="author-block"><sup>1</sup>Tsinghug University,</span>
-            <span class="author-block"><sup>2</sup>Infinigence-AI,</span>
-            <span class="author-block"><sup>3</sup>Stanford University,</span>
-            <span class="author-block"><sup>4</sup>Shanghai Jiao Tong University</span>
-            <br>
-            <span class="author-block"><sup>*</sup>Equal contribution</span>
-          </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-value">3.9x</div>
+        <div class="stat-label">Effective Context Length</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">6.6-8.2x</div>
+        <div class="stat-label">Throughput vs. FlashAttention2</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">1.7-1.9x</div>
+        <div class="stat-label">Throughput vs. vLLM</div>
+      </div>
+    </div>
 
-          <div class="column has-text-centered">
-            <div class="publication-links">
-              <span class="link-block">
-                <a href="https://arxiv.org/abs/2406.14909v1"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="ai ai-arxiv"></i>
-                  </span>
-                  <span>arXiv</span>
-                </a>
-              </span>
-              <!-- Code Link. -->
-              <span class="link-block">
-                <a href="https://github.com/thu-nics/MoA"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="fab fa-github"></i>
-                  </span>
-                  <span>Code</span>
-                  </a>
-              </span>
-          </div>
-        </div>
+    <div class="hero-cta">
+      <div class="hero-actions">
+        <a href="https://arxiv.org/abs/2406.14909" class="btn btn-primary">
+          <i class="fas fa-file-lines"></i> Read Paper
+        </a>
+        <a href="https://github.com/thu-nics/MoA" class="btn btn-secondary">
+          <i class="fab fa-github"></i> View Code
+        </a>
+        <span class="hero-badge">
+          <i class="fas fa-award"></i> COLM 2025
+        </span>
       </div>
     </div>
   </div>
 </section>
 
+<section class="section" id="overview">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Overview</p>
+      <h2 class="section-title">Short attention spans can still preserve long-context behavior.</h2>
+      <p class="section-subtitle">
+        Uniform sliding windows give every head the same local budget. MoA assigns each head its own elastic span rule so local heads stay cheap and global heads keep enough context.
+      </p>
+    </div>
 
-<section class="section">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <!-- MoA Introduction Text -->
-      <div class="column is-two-thirds">
-        <h2 class="title is-3">TL;DR</h2>
-        <div class="content has-text-justified">
-          <p>
-            Mixture-of-Sparse-Attention (MoA) compresses attention in LLMs, so that they compute <b>short attention</b>, but remember <b>long context</b>.
-          </p>
-          <p>
-            🎉 Introducing Mixture-of-Sparse-Attention (MoA) - our new method for compressing attention in LLMs!
-          </p>
-          <p>
-            🚀 Achieves <b>6.6−8.2x</b> faster throughput than dense FlashAttention2.
-          </p>
-          <p>
-            🎯 Improves retrieval accuracy by <b>1.5-7.1x</b> compared to uniform sparse attention.
-          </p>
-          <p>
-            🤗 Easy to use with our automatic compression pipeline - deploy in just a <b>few lines of code!</b>
-          </p>
+    <div class="overview-grid reveal">
+      <div class="overview-content">
+        <div class="overview-point">
+          <div class="overview-point-icon problem"><i class="fas fa-xmark"></i></div>
+          <p><strong>Uniform spans misallocate budget.</strong> Some heads mainly need local context, while others require broad context to preserve retrieval and understanding.</p>
+        </div>
+        <div class="overview-point">
+          <div class="overview-point-icon solution"><i class="fas fa-check"></i></div>
+          <p><strong>MoA searches per-head elastic rules.</strong> Attention span becomes a head-specific function of input length under a target density constraint.</p>
+        </div>
+        <div class="overview-point">
+          <div class="overview-point-icon solution"><i class="fas fa-check"></i></div>
+          <p><strong>The method is training-free.</strong> A calibration pass profiles attention influence, then an optimizer selects the best heterogeneous span plan.</p>
         </div>
       </div>
-
-      <!-- MoA Video Demo -->
-      <div class="column is-one-third">
-        <div class="video-container">
-          <video autoplay controls loop muted playsinline style="width: 100%;">
-            <source src="./static/videos/moa_demo.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          <div class="caption">MoA chatbot demo</div>
-        </div>
+      <div class="overview-figure">
+        <img src="./static/images/method_brief.png" alt="MoA overview: attention patterns and elastic rules">
       </div>
     </div>
   </div>
 </section>
 
-
-<section class="section">
-  <div class="container is-max-desktop">
-    <!-- Abstract -->
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified">
-          <p>
-            Sparse attention can effectively mitigate the significant memory and throughput demands of Large Language Models (LLMs) in long contexts. Existing methods typically employ a uniform sparse attention mask, applying the same sparse pattern across different attention heads and input lengths. However, this approach fails to capture the diverse attention patterns inherent in LLMs, ignoring their distinct accuracy-latency trade-offs.
-          </p>
-          <p>
-            To address this challenge, we propose the Mixture of Attention (MoA), which automatically tailors distinct sparse attention configurations to different heads and layers. MoA constructs and navigates a search space of various attention patterns and their scaling rules relative to input sequence lengths. It profiles the model, evaluates potential configurations, and pinpoints the optimal sparse attention compression plan. MoA adapts to varying input sizes, revealing that some attention heads expand their focus to accommodate longer sequences, while others consistently concentrate on fixed-length local contexts.
-          </p>
-          <p>
-            Experiments show that MoA increases the effective context length by 3.9x with the same average attention span, boosting retrieval accuracy by 1.5-7.1x over the uniform-attention baseline across Vicuna-{7B,13B}, and Llama3-{8B,70B} models. Moreover, MoA narrows the capability gaps between sparse and dense models, reducing the maximum relative performance drop from 9%-36% to within 5% across two long-context understanding benchmarks. MoA achieves a 1.2-1.4x GPU memory reduction, boosting decode throughput by 6.6-8.2x and 1.7-1.9x compared to FlashAttention2 and vLLM, with minimal impact on performance.
-          </p>
-        </div>
-      </div>
+<section class="section section-dark" id="observations">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">The Discovery</p>
+      <h2 class="section-title">Attention is heterogeneous in two ways.</h2>
+      <p class="section-subtitle">
+        Profiling pre-trained LLMs reveals two facts about attention heads. Together they explain why a single uniform sliding window cannot serve a whole model.
+      </p>
     </div>
-    <!-- /Abstract -->
-  </div>
-</section>
 
-
-<section class="section">
-
-  <!-- Motivation. -->
-  <div class="container is-max-desktop">
-    <div class="columns is-centered">
-      <div class="column is-full-width">
-        <h2 class="title is-3">Observation</h2>
-        <div class="has-text-centered">
-          <img src="./static/images/oracle.jpg" alt="Oracle Image" style="width: 70%;">
-        </div>
-        <br>
-        <!-- Generalization. -->
-        <h3 class="title is-4">Heterogeneous Attention Patterns</h3>
-        <div class="content has-text-justified">
-          <p>
-            Different attention heads in LLMs exhibit heterogeneous attention patterns. In the figure above, the first head primarily focuses on local contexts with a narrow-span sliding window, while the third head covers nearly the entire input, indicating global attention. 
-          </p>
-        </div>
-        
-        <h3 class="title is-4">Heterogeneous Elastic Rules</h3>
-        <div class="content has-text-justified">
-          <p>
-            In addition to heterogeneity at a certain length, different attention heads also exhibit varying elastic behaviors as the input length changes. 
-            The figure above illustrates this variability: 
-            for shorter inputs (the upper left part of the attention matrix), the second and third heads initially show global attention. However, as input length increases, the second head remains the medium-span local focus, while the third head continues to expand as global attention.
-          </p>
-        </div>
-
-        <br/>
-        <!--/ Generalization. -->
-      </div>
-    </div>
-  <!--/ Motivation. -->
-  </div>
-</div>
-
-
-
-<section class="section">
-  <!-- Motivation. -->
-  <div class="container is-max-desktop">
-    <div class="columns is-centered">
-      <div class="column is-full-width">
-        <h2 class="title is-3">Methodology</h2>
-
-        <div class="content has-text-centered">
-          <img src="./static/images/workflow.png"
-          class="exp-image"
-          alt="Work Flow"
-          style="width: 100%"/>
-        </div>
-
-        <!-- Generalization. -->
-        <h3 class="title is-4">Elastic Rule Search Space</h3>
-        <div class="content has-text-justified">
-          <p>
-          Taking into account the inherently heterogeneous and elastic nature of LLM attention patterns, MoA adopts a hardware friendly sliding window mask with initial tokens as attention sink. The attention span of head is formulated as a linear function of input length.
-          </p>
-        </div>
-
-
-        <!-- Generalization. -->
-        <h3 class="title is-4">Attention Influence Profiling</h3>
-        <div class="content has-text-justified">
-          <p>
-            MoA approximates the loss increase of masking each attention value using first-order Taylor expansion. In practice, we use backpropagation on a calibration dataset to calculate the average attention influence of each head and layer.
-          </p>
-          <p>
-            Our key insight is that the calibration dataset should feature long range dependency and model alignment. MoA utilizes long-contextual MultiNews dataset, calculating the loss only on the summary part and more importantly, uses the reponse of dense model instead of the ground truth answer.
-          </p>
-          <div class="content has-text-centered">
-            <img src="./static/images/calibration.png"
-            class="exp-image"
-            alt="dataset ablation"
-            style="width: 100%"/>
-          </div>
-          
-        </div>
-        <br/>
-        <h3 class="title is-4">Automatic Optimization</h3>
-        <div class="content has-text-justified">
-          <p>
-            MoA automatically selects the optimal elastic rule for each attention head to minimize accuracy losses across various sequence lengths under density budgets. 
-            Based on the profiling results, MoA first identifies Pareto front compression plans where any improvement in accuracy loss at one profile length would worsen another. 
-          </p>
-          <p>
-            To ensure the best generalization to lengths beyond those profiled, MoA then selects the plan that yields the minimum loss at an unseen length among the Pareto front solutions as the final plan.
-          </p>
-        </div>
-        <!-- <div class="content has-text-centered">
-          <img src="./static/src/spbn.png"
-          class="exp-image"
-          alt="Experimental Results Image."
-          width="800px" height="400px"/>
-        </div> -->
-        <br/>
-        <!--/ Generalization. -->
-        <br/>
-                
-      </div>
-    </div>
-  <!--/ Motivation. -->
-  </div>
-</div>
-
-
-<section class="section">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered">
-        <div class="column is-full-width">
-          <h2 class="title is-3"> Experiments and Analysis:  </h2>
-          <!-- Perf. -->
-          <h3 class="title is-4"> 📈  Overall Performance</h3>
-          <div class="content has-text-justified">
-            <p>
-              MoA outperforms state-of-the-art sparse attention methods and achieves comparable performance to the original dense model at 50% density. 
-              On average, MoA exhibits only a minor 1% drop in relative accuracy for retrieval tasks. Furthermore, it demonstrates a maximum relative drop of just 5% and 3% in scores across two benchmarks——significantly smaller than those observed with baseline methods.
-            </p>
-          </div>
-          <div class="content has-text-centered">
-            <img src="./static/images/main_result.png"
-            class="exp-image"
-            alt="Experimental Results Image."
-            style="width: 85%"/>  
-          </div>
-
-        <!--/ Perf. -->
-        <!-- AttnMap. -->
-        <h3 class="title is-4"> 🧭 Efficiency Improvement</h3>
-        <div class="content has-text-justified">
-          <p>
-            MoA reduces the GPU memory footprint by 1.2x-1.4x and boosts the throughput of dense models by 6.6−8.2x on a single GPU, primarily attributed to a static-size KV-Cache, reduced attention computations, increased batch size, and optimized GPU kernel.
-          </p>
-        </div>
-        <div class="content has-text-centered">
-          <img src="./static/images/throughput.png"
-          class="exp-image"
-          alt="efficiency result."
-          style="width: 85%;"/>
-        </div>
-        
-        <h3 class="title is-4"> 🔍 Ablation Studies</h3>
+    <div class="observation-block reveal">
+      <div class="observation-copy">
+        <span class="observation-label">Observation 01</span>
+        <h3>Different heads have different spans.</h3>
         <p>
-          Starting with a basic uniform mask, we observe significant enhancements by sequentially introducing heterogeneity: layers first, then heads, and finally elastic rules.
+          At a fixed input length, some heads concentrate in a narrow band near the diagonal, while others spread across the entire input. A uniform window truncates the global heads and breaks long-range retrieval, yet still overspends compute and KV-Cache on the local ones. Matching each head to its own span raises content retrieval accuracy from 25% to 98%.
         </p>
-        <div class="content has-text-centered">
-          <img src="./static/images/ablation.png"
-          class="exp-image"
-          alt="Experimental Results Image."
-          style="width: 45%"/>
+      </div>
+      <figure class="observation-figure">
+        <img src="./static/images/oracle.jpg" alt="Attention matrices of three Vicuna-7B heads: a local head, a medium-span head, and a global head">
+        <figcaption>Attention matrices from three Vicuna-7B heads, each averaged over 256 LongEval items: local, medium, and global spans coexist in one model.</figcaption>
+      </figure>
+    </div>
+
+    <div class="observation-block reveal">
+      <div class="observation-copy">
+        <span class="observation-label">Observation 02</span>
+        <h3>Spans scale differently as the input grows.</h3>
+        <p>
+          At short lengths, many heads look identically dense, and the difference only appears once the input stretches. Some heads keep a fixed local span no matter how long the input gets, while others expand in proportion to it. MoA models each head's span as a linear rule <span class="observation-rule">S&nbsp;=&nbsp;&alpha;&nbsp;+&nbsp;&beta;&nbsp;&middot;&nbsp;N</span> and searches &alpha; and &beta; per head.
+        </p>
+      </div>
+
+      <div class="matrix-stage" id="matrixStage">
+        <div class="matrix-stage-header">
+          <span class="matrix-stage-kicker">Attention matrix per head</span>
+          <div class="matrix-length-readout">
+            <span class="matrix-length-label">Input length</span>
+            <span class="matrix-length-value" id="matrixLengthValue">4k</span>
+            <div class="matrix-length-ticks" id="matrixLengthTicks">
+              <span data-level="0">4k</span>
+              <span data-level="1">8k</span>
+              <span data-level="2">12k</span>
+              <span data-level="3">16k</span>
+            </div>
+          </div>
         </div>
-        
+
+        <div class="matrix-grid">
+          <div class="matrix-card">
+            <canvas class="matrix-canvas" id="matrixHeadA" width="240" height="240"></canvas>
+            <div class="matrix-card-title">
+              <span>Head A</span>
+              <h4>Local, fixed</h4>
+            </div>
+            <p class="matrix-rule">S = 1.6k <em>(&beta; = 0)</em></p>
+            <p class="matrix-readout" id="matrixReadoutA">40% of input</p>
+          </div>
+          <div class="matrix-card">
+            <canvas class="matrix-canvas" id="matrixHeadB" width="240" height="240"></canvas>
+            <div class="matrix-card-title">
+              <span>Head B</span>
+              <h4>Medium, fixed</h4>
+            </div>
+            <p class="matrix-rule">S = 5.6k <em>(&beta; = 0)</em></p>
+            <p class="matrix-readout" id="matrixReadoutB">100% of input</p>
+          </div>
+          <div class="matrix-card">
+            <canvas class="matrix-canvas" id="matrixHeadC" width="240" height="240"></canvas>
+            <div class="matrix-card-title">
+              <span>Head C</span>
+              <h4>Global, elastic</h4>
+            </div>
+            <p class="matrix-rule">S = 0.9 &middot; N <em>(&beta; &gt; 0)</em></p>
+            <p class="matrix-readout" id="matrixReadoutC">90% of input</p>
+          </div>
+        </div>
+        <p class="matrix-stage-note">
+          Illustrative N&times;N causal attention matrices. Blue cells are kept by each head's rule; faint cells are masked. Heads B and C look alike at 4k. By 16k, one has stayed put while the other has kept growing.
+        </p>
       </div>
     </div>
-</section>
 
-<section class="section" id="BibTeX">
-  <div class="container is-max-desktop content">
-    <h2 class="title"> Reference </h2>
-    <pre><code>@misc{fu2024moa,
-      title={MoA: Mixture of Sparse Attention for Automatic Large Language Model Compression}, 
-      author={Tianyu Fu and Haofeng Huang and Xuefei Ning and Genghan Zhang and Boju Chen and Tianqi Wu and Hongyi Wang and Zixiao Huang and Shiyao Li and Shengen Yan and Guohao Dai and Huazhong Yang and Yu Wang},
-      year={2024},
-      eprint={2406.14909},
-      archivePrefix={arXiv},
-      primaryClass={id='cs.LG' full_name='Machine Learning' is_active=True alt_name=None in_archive='cs' is_general=False description='Papers on all aspects of machine learning research (supervised, unsupervised, reinforcement learning, bandit problems, and so on) including also robustness, explanation, fairness, and methodology. cs.LG is also an appropriate primary category for applications of machine learning methods.'}
-}</code></pre>
   </div>
 </section>
 
+<section class="section section-gray" id="method">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Method</p>
+      <h2 class="section-title">Search a heterogeneous attention-span plan.</h2>
+      <p class="section-subtitle">
+        MoA constructs a search space of elastic span rules, profiles attention influence on long-context calibration data, and selects the optimal rule for each head.
+      </p>
+    </div>
+
+    <figure class="figure-panel reveal">
+      <img src="./static/images/workflow.png" alt="MoA workflow">
+      <figcaption>MoA profiles attention influence, optimizes per-head elastic rules, and deploys the resulting heterogeneous sliding-window mask.</figcaption>
+    </figure>
+
+    <div class="method-grid reveal">
+      <div class="method-card">
+        <div class="method-icon"><i class="fas fa-layer-group"></i></div>
+        <h3>Elastic Search Space</h3>
+        <p>Each attention head selects from rules that map input length to a hardware-friendly sliding-window span.</p>
+      </div>
+      <div class="method-card">
+        <div class="method-icon"><i class="fas fa-wave-square"></i></div>
+        <h3>Influence Profiling</h3>
+        <p>First-order gradient profiling estimates how masking attention positions changes the prediction loss.</p>
+      </div>
+      <div class="method-card">
+        <div class="method-icon"><i class="fas fa-sliders"></i></div>
+        <h3>Automatic Optimization</h3>
+        <p>A density-constrained optimizer finds the best per-head plan, then validates it at an unseen sequence length.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="calibration">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Calibration</p>
+      <h2 class="section-title">Useful profiling must test long-context dependence.</h2>
+      <p class="section-subtitle">
+        MoA profiles on long summaries and uses the dense model's own output as the reference, so gradients track the behavior compression must preserve.
+      </p>
+    </div>
+
+    <div class="calibration-layout reveal">
+      <div class="calibration-topline">
+        <div class="calibration-ingredients">
+          <div class="ingredient-card">
+            <div class="ingredient-icon"><i class="fas fa-scroll"></i></div>
+            <div>
+              <h3>Long-range content</h3>
+              <p>Summaries depend on evidence across documents.</p>
+            </div>
+          </div>
+          <div class="ingredient-card">
+            <div class="ingredient-icon"><i class="fas fa-bullseye"></i></div>
+            <div>
+              <h3>Dependent output loss</h3>
+              <p>Compute loss on the generated summary.</p>
+            </div>
+          </div>
+          <div class="ingredient-card">
+            <div class="ingredient-icon"><i class="fas fa-align-left"></i></div>
+            <div>
+              <h3>Model-aligned reference</h3>
+              <p>Use dense-model summaries as supervision.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="calibration-copy">
+          <div class="calibration-comparison">
+            <p class="comparison-label">Weak Profiling</p>
+            <h3>RedPajama context</h3>
+            <div class="comparison-metric">0.25 retrieval / 4.95 PPL</div>
+          </div>
+          <div class="calibration-comparison strong">
+            <p class="comparison-label">MoA Profiling</p>
+            <h3>MultiNews + dense reference</h3>
+            <div class="comparison-metric">0.95 retrieval / 3.96 PPL</div>
+          </div>
+        </div>
+      </div>
+
+      <figure class="figure-panel calibration-figure">
+        <img src="./static/images/calibration.png" alt="MoA calibration dataset ablation">
+        <figcaption>Table 2 isolates the useful profiling ingredients: long-range dependence and dense-model alignment.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" id="results">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Experiments</p>
+      <h2 class="section-title">MoA improves the accuracy-efficiency frontier.</h2>
+      <p class="section-subtitle">
+        Experiments cover long-context retrieval, LV-Eval, LongBench, perplexity, throughput, memory, and search-space ablations.
+      </p>
+    </div>
+
+    <div class="results-summary reveal">
+      <div class="metric-card">
+        <div class="metric-value">1.5-7.1x</div>
+        <div class="metric-label">Retrieval gain over uniform-window baselines across Vicuna and Llama3.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">6.6-8.2x</div>
+        <div class="metric-label">Decode throughput speedup over FlashAttention2 at 50% density.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">1.7-1.9x</div>
+        <div class="metric-label">Decode throughput speedup over vLLM with minimal performance impact.</div>
+      </div>
+    </div>
+
+    <div class="expandable-section open reveal">
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <div class="expandable-title">Overall Long-Context Performance</div>
+        <div class="expandable-icon"><i class="fas fa-plus"></i></div>
+      </div>
+      <div class="expandable-content">
+        <div class="expandable-content-inner">
+          <div class="expandable-inner">
+            <p>
+              At 50% density, MoA stays close to full attention across retrieval accuracy, LV-Eval, LongBench, and perplexity. It reduces maximum relative drops to 5% on LV-Eval and 3% on LongBench, while the average retrieval drop stays below 1%.
+            </p>
+            <figure class="figure-panel">
+              <img src="./static/images/main_result.png" alt="MoA comparative performance results">
+              <figcaption>Table 4 from the COLM 2025 version compares MoA with H2O, InfLLM, and StreamingLLM across Vicuna-7B, Vicuna-13B, Llama3-8B, and Llama3-70B.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="expandable-section reveal">
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <div class="expandable-title">Runtime and Memory Efficiency</div>
+        <div class="expandable-icon"><i class="fas fa-plus"></i></div>
+      </div>
+      <div class="expandable-content">
+        <div class="expandable-content-inner">
+          <div class="expandable-inner">
+            <p>
+              The throughput gains come from static KV-cache size, reduced attention computation, increased batch capacity, and a CUDA kernel for heterogeneous attention.
+            </p>
+            <figure class="figure-panel">
+              <img src="./static/images/throughput.png" alt="MoA decode throughput comparison">
+              <figcaption>At 50% density, MoA reaches 6.6-8.2x throughput over FlashAttention2 and 1.7-1.9x over vLLM on A100-80GB.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="expandable-section reveal">
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <div class="expandable-title">Search Space Ablation</div>
+        <div class="expandable-icon"><i class="fas fa-plus"></i></div>
+      </div>
+      <div class="expandable-content">
+        <div class="expandable-content-inner">
+          <div class="expandable-inner">
+            <p>
+              Starting from a uniform mask, MoA progressively adds layer heterogeneity, head heterogeneity, and elastic rules. Head heterogeneity and elasticity deliver the largest retrieval improvements at 25% density.
+            </p>
+            <figure class="figure-panel figure-narrow">
+              <img src="./static/images/ablation.png" alt="MoA ablation study">
+              <figcaption>Elastic heterogeneous rules improve retrieval accuracy from 0.25 to 0.98 at 8k input length under a 25% density budget.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="demo">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Demo</p>
+      <h2 class="section-title">A plug-and-play compression pipeline for long-context inference.</h2>
+      <p class="section-subtitle">
+        The implementation exposes MoA as a practical attention backend for long-context decoding under controlled KV-cache density.
+      </p>
+    </div>
+
+    <div class="demo-layout reveal">
+      <div class="demo-copy">
+        <div class="demo-point">
+          <span>01</span>
+          <p>Profile an LLM with a model-aligned long-context calibration set.</p>
+        </div>
+        <div class="demo-point">
+          <span>02</span>
+          <p>Search per-layer, per-head elastic window rules under the density budget.</p>
+        </div>
+        <div class="demo-point">
+          <span>03</span>
+          <p>Serve with a static, sparse, heterogeneous KV-cache plan.</p>
+        </div>
+      </div>
+      <div class="video-frame">
+        <video autoplay controls loop muted playsinline>
+          <source src="./static/videos/moa_demo.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray authors-section" id="authors">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-eyebrow">Team</p>
+      <h2 class="section-title">Meet the researchers.</h2>
+    </div>
+
+    <div class="authors-list reveal">
+      <a href="https://fuvty.simple.ink/" class="author-tag">Tianyu Fu<sup>1,2,*</sup></a>
+      <a href="https://github.com/jason-huang03" class="author-tag">Haofeng Huang<sup>1,2,*</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/XuefeiNing" class="author-tag">Xuefei Ning<sup>1,*</sup></a>
+      <a href="https://zhang677.github.io/" class="author-tag">Genghan Zhang<sup>3</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people.html" class="author-tag">Boju Chen<sup>1</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/TianqiWu" class="author-tag">Tianqi Wu<sup>1,2</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/HongyiWang" class="author-tag">Hongyi Wang<sup>1,2</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/ZixiaoHuang" class="author-tag">Zixiao Huang<sup>1,2</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/ShiyaoLi" class="author-tag">Shiyao Li<sup>1,2</sup></a>
+      <a href="https://scholar.google.com/citations?user=SvE3bdUAAAAJ&hl=en" class="author-tag">Shengen Yan<sup>1,2</sup></a>
+      <a href="https://dai.sjtu.edu.cn/pepledetail.html?id=218" class="author-tag">Guohao Dai<sup>2,4</sup></a>
+      <a href="https://www.ee.tsinghua.edu.cn/en/info/1067/1292.htm" class="author-tag">Huazhong Yang<sup>1</sup></a>
+      <a href="https://nicsefc.ee.tsinghua.edu.cn/people/YuWang" class="author-tag">Yu Wang<sup>1</sup></a>
+    </div>
+
+    <div class="affiliations reveal">
+      <sup>1</sup>Tsinghua University &nbsp;&nbsp;
+      <sup>2</sup>Infinigence-AI &nbsp;&nbsp;
+      <sup>3</sup>Stanford University &nbsp;&nbsp;
+      <sup>4</sup>Shanghai Jiao Tong University<br>
+      <span style="font-size: 12px;">*Equal contribution. Genghan Zhang made contributions while at Tsinghua University.</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="bibtex">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="section-eyebrow">Citation</p>
+      <h2 class="section-title">Cite our work.</h2>
+      <p class="section-subtitle">
+        If you find MoA useful for your research, please consider citing our paper.
+      </p>
+    </div>
+
+    <div class="reveal" style="margin-top: 32px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-size: 14px; font-weight: 600; color: var(--apple-black);">
+          <i class="fas fa-quote-left" style="margin-right: 8px; color: var(--apple-gray);"></i>
+          BibTeX
+        </span>
+        <button class="copy-btn" onclick="copyBibtex()" style="position: static;">
+          <i class="fas fa-copy"></i> Copy BibTeX
+        </button>
+      </div>
+      <div class="bibtex-container" style="margin-top: 0;">
+        <pre><code id="bibtexCode">@inproceedings{fu2025moa,
+  title={Mixture of Attention Spans: Optimizing LLM Inference Efficiency with Heterogeneous Sliding-Window Lengths},
+  author={Fu, Tianyu and Huang, Haofeng and Ning, Xuefei and Zhang, Genghan and Chen, Boju and Wu, Tianqi and Wang, Hongyi and Huang, Zixiao and Li, Shiyao and Yan, Shengen and Dai, Guohao and Yang, Huazhong and Wang, Yu},
+  booktitle={Conference on Language Modeling},
+  year={2025},
+  url={https://arxiv.org/abs/2406.14909}
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<button class="scroll-top" id="scrollTop" onclick="scrollToTop()" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
 
 <footer class="footer">
   <div class="container">
-    <div class="content has-text-centered">
-      <a class="icon-link"
-         href="./static/videos/nerfies_paper.pdf">
-        <i class="fas fa-file-pdf"></i>
-      </a>
-      <a class="icon-link" href="https://github.com/keunhong" class="external-link" disabled>
-        <i class="fab fa-github"></i>
-      </a>
-    </div>
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content">
-          <p>
-            This website is licensed under a <a rel="license"
-                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
-            Commons Attribution-ShareAlike 4.0 International License</a>.
-          </p>
-          <p>
-            This means you are free to borrow the <a
-              href="https://github.com/nerfies/nerfies.github.io">source code</a> of this website,
-            we just ask that you link back to this page in the footer.
-            Please remember to remove the analytics code included in the header of the website which
-            you do not want on your website.
-          </p>
-        </div>
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="https://arxiv.org/abs/2406.14909">Paper</a>
+        <a href="https://github.com/thu-nics/MoA">Code</a>
+        <a href="#bibtex">BibTeX</a>
       </div>
+      <div class="footer-social">
+        <a href="https://arxiv.org/abs/2406.14909" aria-label="Paper"><i class="fas fa-file-lines"></i></a>
+        <a href="https://github.com/thu-nics/MoA" aria-label="GitHub"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 32px; color: rgba(255,255,255,0.5); font-size: 12px;">
+      © 2025 NICS-EFC Team. Contact Tianyu Fu for any questions.
     </div>
   </div>
 </footer>
