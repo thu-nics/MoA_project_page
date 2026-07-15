@@ -397,12 +397,36 @@ video {
   position: absolute;
   inset: auto 8% 0;
   height: 1px;
+  z-index: 3;
   background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hero-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 62% 66% at 50% 48%,
+    rgba(255, 255, 255, 0.97) 0%,
+    rgba(255, 255, 255, 0.9) 38%,
+    rgba(255, 255, 255, 0.48) 68%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: var(--max-width-wide);
   width: 100%;
 }
@@ -1541,6 +1565,16 @@ video {
 
   .hero {
     padding: 92px 18px 64px;
+  }
+
+  .hero-vignette {
+    background: radial-gradient(
+      ellipse 82% 70% at 50% 48%,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(255, 255, 255, 0.92) 42%,
+      rgba(255, 255, 255, 0.5) 72%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
 
   .hero-title {
