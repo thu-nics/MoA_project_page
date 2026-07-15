@@ -138,11 +138,13 @@
     const timing = { shortHold: 1.5, grow: 5.4, longHold: 3.4, return: 2.4 };
     const cycle = timing.shortHold + timing.grow + timing.longHold + timing.return;
     const refreshOrderSeed = Math.random() * 10000;
+    const response = { startedAt: -Infinity, cells: new Map() };
     let width = 0;
     let height = 0;
     let maxCells = 26;
     let minCells = 10;
     let heads = [];
+    let currentAccentCells = new Map();
     let running = true;
     let startTime = performance.now();
 
@@ -214,7 +216,14 @@
       return `rgba(0, 113, 227, ${alpha})`;
     }
 
-    function drawHead(head, nFloat, fieldFade, now) {
+    function getResponseStrength(now, delay) {
+      const age = (now - response.startedAt) / 1000 - delay;
+      if (age < 0 || age >= 0.72) return 0;
+      if (age < 0.07) return smoothstep(age / 0.07);
+      return 1 - smoothstep((age - 0.07) / 0.65);
+    }
+
+    function drawHead(head, nFloat, fieldFade, now, accentsThisFrame) {
       const rows = Math.min(maxCells, Math.ceil(nFloat));
       const span = clamp(head.alpha + head.beta * nFloat, 1, nFloat);
       const step = head.step;
@@ -244,6 +253,12 @@
           const noise = cellNoise(head.seed, row, col);
           const pulse = Math.max(0, 1 - Math.abs(row - pulseRow) / 1.8);
           const accent = kept && (noise > 0.83 || pulse > 0.48);
+          const cellKey = `${head.seed}:${row}:${col}`;
+          const responseDelay = response.cells.get(cellKey);
+          const responseStrength = responseDelay === undefined
+            ? 0
+            : getResponseStrength(now, responseDelay);
+          const responding = responseStrength > 0;
 
           const localX = col * step + step * 0.5;
           const localY = row * step + step * 0.5;
@@ -260,9 +275,14 @@
           } else {
             alpha = 0.018 + noise * 0.025;
           }
+          if (responding) alpha += responseStrength * (0.24 + noise * 0.04);
           alpha = (alpha + pointerLift) * rowFade * effectiveFade;
 
-          ctx.fillStyle = rgbaForCell(head, kept, noise, accent, alpha);
+          if (accent && rowFade * effectiveFade > 0.03) {
+            accentsThisFrame.set(cellKey, { x: globalX, y: globalY });
+          }
+
+          ctx.fillStyle = rgbaForCell(head, kept || responding, noise, accent || responding, alpha);
           ctx.fillRect(
             col * step + (step - cellSize) / 2,
             row * step + (step - cellSize) / 2,
@@ -279,7 +299,11 @@
       ctx.clearRect(0, 0, width, height);
       pointer.nx = lerp(pointer.nx, pointer.tx, 0.035);
       pointer.ny = lerp(pointer.ny, pointer.ty, 0.035);
-      for (const head of heads) drawHead(head, nFloat, fieldFade, now);
+      const accentsThisFrame = new Map();
+      for (const head of heads) {
+        drawHead(head, nFloat, fieldFade, now, accentsThisFrame);
+      }
+      currentAccentCells = accentsThisFrame;
     }
 
     function frame(now) {
@@ -319,6 +343,28 @@
       pointer.y = -1000;
       pointer.tx = 0;
       pointer.ty = 0;
+    });
+
+    hero.addEventListener("pointerdown", (event) => {
+      if (reducedMotion || currentAccentCells.size === 0) return;
+
+      const rect = hero.getBoundingClientRect();
+      const originX = event.clientX - rect.left;
+      const originY = event.clientY - rect.top;
+      const distances = [];
+      let nearestDistance = Infinity;
+
+      for (const [cellKey, position] of currentAccentCells) {
+        const distance = Math.hypot(position.x - originX, position.y - originY);
+        distances.push({ cellKey, distance });
+        nearestDistance = Math.min(nearestDistance, distance);
+      }
+
+      response.cells = new Map(distances.map(({ cellKey, distance }) => [
+        cellKey,
+        Math.min(0.72, (distance - nearestDistance) / 1150),
+      ]));
+      response.startedAt = performance.now();
     });
 
     window.addEventListener("resize", resize);
